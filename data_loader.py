@@ -40,7 +40,7 @@ def get_loader(transform,
                      https://github.com/cocodataset/cocoapi
     """
     
-    assert mode in ["train", "val", "test"], "mode must be one of 'train', 'val' or 'test'."
+    assert mode in ["train", "val", "test", "inference"], "mode must be one of 'train', 'val' or 'test'."
     if vocab_from_file == False: 
         assert mode == "train", "To generate vocab from captions file, \
                must be in training mode (mode='train')."
@@ -63,6 +63,13 @@ def get_loader(transform,
         assert vocab_from_file == True, "Change vocab_from_file to True."
         img_folder = os.path.join(cocoapi_loc, "cocoapi/images/test2014/")
         annotations_file = os.path.join(cocoapi_loc, "cocoapi/annotations/image_info_test2014.json")
+    # inference mode uses external image
+    if mode == "inference":
+        assert batch_size == 1, "Please change batch_size to 1 if testing your model."
+        assert os.path.exists(vocab_file), "Must first generate vocab.pkl from training data."
+        assert vocab_from_file == True, "Change vocab_from_file to True."
+        img_folder = os.path.join(cocoapi_loc, "cocoapi/images/test2014/")
+        annotations_file = os.path.join(cocoapi_loc, "cocoapi/annotations/image_info_test2014.json")    
 
     # COCO caption dataset
     dataset = CoCoDataset(transform=transform,
