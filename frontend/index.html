@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <link rel="stylesheet" href="style.css" />
+    <script src="annotate.js"></script>
+    <title>Bildbeschreibung per KI</title>
+</head>
+
+<body>
+    <h1>Bildbeschreibung per künstlicher Intelligenz</h1>
+    <p> Wenn Kinder ihre Muttersprache erlernen, hören Sie zunächst Beschreibungen dessen, was sie sehen, und lernen dadurch als erstes, das Gesehene – also Bilder – mit Worten zu beschreiben. Für das maschinelle Lernen ist die Beschreibung von Bildinhalten
+        ebenfalls ein sehr spannendes und herausforderndes Problem, bei dem in den letzten Jahren große Fortschritte ezielt wurden.
+    </p>
+    <p>
+        Zu der hier vorgestellten Demo bin ich durch die Bachelorarbeit von <a href="https://www.xing.com/profile/Timo_Neuhaus5/cv">Timo Neuhaus</a> inspiriert worden. Die Anwendung basiert auf dem Paper
+        <a class="quote" href="https://arxiv.org/pdf/1411.4555.pdf">Show and Tell: A Neural Image Caption Generator</a> der Google-Mitarbeiter Oriol Vinyals et al. sowie auf
+        <a href="https://github.com/ntrang086/image_captioning">Code</a> von <a href="https://www.linkedin.com/in/ntrang">Trang Nguyen</a>.
+    </p>
+    <p>
+        Der benutzte Ansatz zerlegt die Aufgabe in zwei Teilschritte:
+        <ol>
+            <li>Das Bild wird zunächst – ähnlich wie im visuellen Kortex – in eine interne Repräsentation übersetzt. Dabei kommt ein Convolutional Neuronal Network (CNN) zum Einsatz, konkret eine vortrainierte Instanz von
+                <a href="https://arxiv.org/abs/1512.03385">ResNet-50</a>.
+            </li>
+            <li>
+                Anschließend wird aus der internen Bildrepräsentation eine sprachliche Beschreibung erzeugt. Hier wird ein Recurrent Neural Network (RNN) mit einem Long short-term memory (LSTM) verwendet.
+            </li>
+        </ol>
+        Beide neuronalen Netwerke wurden mit annotierten Bildern aus dem <a href="https://arxiv.org/pdf/1405.0312.pdf">COCO (Common Objects in Context)</a> Datensatz von Microsoft trainiert. Dieser Datensatz besteht aus gut 80.000 annotierten Trainingsbildern
+        und jeweils weiteren gut 40.000 Bildern für Validierung und Test. Die Zahlen geben ein Gefühl dafür, welch große Trainigsdatensätze für Deep-Learning-Verfahren benötigt werden.
+    </p>
+    <p>
+        In der folgenden Maske können Sie Bilder per Drag &amp; Drop bzw. über einen Upload-Button hochladen, die Anwendung zeigt anschließend die generierte Beschreibung an.
+    </p>
+    <p>
+        Die Bilder werden dabei <em>nicht gespeichert</em>, sondern unmittelbar nach der Verarbeitung gelöscht.
+        <!--Wer möchte, kann <strong>freiwillig</strong> Feedback zu zur erzeugten Bildunterschrift geben und das Bild für das weitere Training des Algorithmus
+        zur Verfügung stellen.-->
+    </p>
+
+    <form id="upload" enctype="multipart/form-data">
+
+        <fieldset>
+            <div>
+                <label for="fileselect">Bild hochladen</label>
+                <input type="file" id="fileselect" name="fileselect[]" accept="image/png, image/jpeg" />
+                <div id="filedrag">oder Bild hierhin ziehen</div>
+            </div>
+            <div id="image"></div>
+            <div id="caption"></div>
+        </fieldset>
+
+    </form>
+
+    <h2>Beispielbilder aus der Validierungsmenge</h2>
+    Die folgenden Bilder können (per Drag &amp; Drop) oben als Beispiele verwendet werden. Die hier angegebenen Bildbeschreibungen sind die – von Menschen erzeugten – Referenzannotationen. Hier sieht man sehr schön, dass der Algorithmus nur das lernt, was
+    er schon einmal gesehen hat: Auf Parmesandosen gestapelte Schnabeltassen bringen ihn aus dem Konzept.
+    <table id="sample">
+        <tr>
+            <td class="image"><img src="http://images.cocodataset.org/val2014/COCO_val2014_000000401092.jpg"></td>
+            <td class="image"><img src="http://images.cocodataset.org/val2014/COCO_val2014_000000006177.jpg"></td>
+            <td class="image"><img src="http://images.cocodataset.org/val2014/COCO_val2014_000000555904.jpg"></td>
+            <td class="image"><img src="http://images.cocodataset.org/val2014/COCO_val2014_000000513381.jpg"></td>
+
+        </tr>
+        <tr>
+            <td>A plate of food and a beverage are on a table.</td>
+            <td>The scissors with black handles are sitting open.</td>
+            <td>People eating in a restaurant near wine bottles.</td>
+            <td>A little girl is all happy as she sits at the table with her cup sitting on the containers of cheese.</td>
+
+        </tr>
+    </table>
+</body>
+
+</html>
