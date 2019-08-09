@@ -150,11 +150,22 @@ class CoCoDataset(data.Dataset):
             return image, caption
 
         # Obtain image if in test mode
-        else:
+        else if self.mode == "test":
             path = self.paths[index]
 
             # Convert image to tensor and pre-process using transform
             PIL_image = Image.open(os.path.join(self.img_folder, path)).convert("RGB")
+            orig_image = np.array(PIL_image)
+            image = self.transform(PIL_image)
+
+            # Return original image and pre-processed image tensor
+            return orig_image, image
+
+        else
+            path = "test.jpg"
+
+            # Convert image to tensor and pre-process using transform
+            PIL_image = Image.open(os.path.join(".", path)).convert("RGB")
             orig_image = np.array(PIL_image)
             image = self.transform(PIL_image)
 
