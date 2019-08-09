@@ -150,7 +150,7 @@ class CoCoDataset(data.Dataset):
             return image, caption
 
         # Obtain image if in test mode
-        else if self.mode == "test":
+        elif self.mode == "test":
             path = self.paths[index]
 
             # Convert image to tensor and pre-process using transform
@@ -161,7 +161,7 @@ class CoCoDataset(data.Dataset):
             # Return original image and pre-processed image tensor
             return orig_image, image
 
-        else
+        else:
             path = "test.jpg"
 
             # Convert image to tensor and pre-process using transform
