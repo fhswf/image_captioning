@@ -75,7 +75,7 @@ function ParseUrl(url) {
 
     let formData = new FormData();
     formData.append("url", url);
-    let request = new Request("http://localhost:5000/caption");
+    let request = new Request("./caption");
 
     fetch(request, {
             method: "POST",
@@ -114,7 +114,7 @@ function ParseFile(file) {
 
     let formData = new FormData();
     formData.append("image", file);
-    let request = new Request("http://localhost:5000/caption");
+    let request = new Request("./caption");
 
     fetch(request, {
             method: "POST",
