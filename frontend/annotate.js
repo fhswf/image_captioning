@@ -75,22 +75,8 @@ function ParseUrl(url) {
 
     let formData = new FormData();
     formData.append("url", url);
-    let request = new Request("./caption");
+    fetchCaption(formData);
 
-    fetch(request, {
-            method: "POST",
-            body: formData
-        })
-        .then(response => response.json())
-        .then(json => {
-            console.log(json);
-            let div = document.getElementById("caption");
-            div.innerText = json.annotation;
-        })
-        .catch(err => {
-            let div = document.getElementById("caption");
-            div.innerText = `Oops, da ist etwas schiefgegangen: ${err}`
-        });
 }
 
 function ParseFile(file) {
@@ -114,21 +100,28 @@ function ParseFile(file) {
 
     let formData = new FormData();
     formData.append("image", file);
+    fetchCaption(formData)
+}
+
+function fetchCaption(body) {
     let request = new Request("./caption");
 
     fetch(request, {
             method: "POST",
-            body: formData
+            body: body
         })
-        .then(response => response.json())
-        .then(json => {
-            console.log(json);
-            let div = document.getElementById("caption");
-            div.innerText = json.annotation;
-        })
-        .catch(err => {
-            let div = document.getElementById("caption");
-            div.innerText = `Oops, da ist etwas schiefgegangen: ${err}`
+        .then(response => {
+            if (response.status == 200 || response.status == 201) {
+                response.json()
+                    .then(json => {
+                        console.log(json);
+                        let div = document.getElementById("caption");
+                        div.innerText = json.annotation;
+                    });
+            } else {
+                let div = document.getElementById("caption");
+                div.innerText = `Oops, da ist etwas schiefgegangen, Status=${response.status}`;
+            }
         });
 }
 

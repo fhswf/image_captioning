@@ -7,6 +7,7 @@ from PIL import Image
 from annotator import Annotator
 import urllib.request
 import io
+import ssl
 
 app = Flask(__name__, static_url_path='/ui')
 CORS(app)
@@ -28,6 +29,7 @@ class Caption(Resource):
         if args.image:
             image = Image.open(args.image)
         else:
+            ssl._create_default_https_context = ssl._create_unverified_context
             with urllib.request.urlopen(args.url) as url:
                 f = io.BytesIO(url.read())
             
