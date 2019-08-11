@@ -102,6 +102,7 @@ def get_loader(transform,
 
 class PEXEL:
     def __init__(self, annotations_file):
+        print("Loading captions from pexels dataset ...")
         self.annotations_file = annotations_file
         self.dataset = dict()
         self.anns = dict()
@@ -114,6 +115,7 @@ class PEXEL:
         for entry in self.dataset:
             anns[entry['_id']] = entry['annotation']
         self.anns = anns
+        print('pexels: loaded {} captions'.format(len(anns)))
 
     def getImgPath(self, id):
         return 'img_{}.jpg'.format(id)
