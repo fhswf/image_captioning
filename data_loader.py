@@ -111,7 +111,7 @@ class JoinedDataset(data.Dataset):
         self.mode = mode
         self.batch_size = batch_size
         self.vocab = Vocabulary(vocab_threshold, vocab_file, start_word,
-            end_word, unk_word, coco_annotations_file, vocab_from_file)
+            end_word, unk_word, coco_annotations_file, pexel_annotations_file, vocab_from_file)
         self.coco_img_folder = coco_img_folder
         self.pexel_img_folder = pexel_img_folder
         if self.mode == "train" or self.mode == "val":

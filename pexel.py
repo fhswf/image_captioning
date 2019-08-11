@@ -1,3 +1,5 @@
+import json
+
 class PEXEL:
     def __init__(self, annotations_file):
         print("Loading captions from pexels dataset ...")
