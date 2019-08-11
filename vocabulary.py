@@ -2,6 +2,7 @@ import nltk
 import pickle
 import os.path
 from pycocotools.coco import COCO
+from data_loader import PEXEL
 from collections import Counter
 
 class Vocabulary(object):
@@ -12,7 +13,8 @@ class Vocabulary(object):
         start_word="<start>",
         end_word="<end>",
         unk_word="<unk>",
-        annotations_file="./cocoapi/annotations/captions_train2014.json",
+        coco_annotations_file="./cocoapi/annotations/captions_train2014.json",
+        pexel_annotations_file="/home/cgawron/pexels/pexels.json",
         vocab_from_file=False):
         """Initialize the vocabulary.
         Paramters:
@@ -31,7 +33,8 @@ class Vocabulary(object):
         self.start_word = start_word
         self.end_word = end_word
         self.unk_word = unk_word
-        self.annotations_file = annotations_file
+        self.pexels_annotations_file = pexel_annotations_file
+        self.coco_annotations_file = coco_annotations_file
         self.vocab_from_file = vocab_from_file
         self.get_vocab()
 
@@ -74,11 +77,21 @@ class Vocabulary(object):
     def add_captions(self):
         """Loop over training captions and add all tokens to the vocabulary 
         that meet or exceed the threshold."""
-        coco = COCO(self.annotations_file)
+        coco = COCO(self.coco_annotations_file)
         counter = Counter()
         ids = coco.anns.keys()
         for i, id in enumerate(ids):
             caption = str(coco.anns[id]["caption"])
+            tokens = nltk.tokenize.word_tokenize(caption.lower())
+            counter.update(tokens)
+
+            if i % 100000 == 0:
+                print("[%d/%d] Tokenizing captions..." % (i, len(ids)))
+
+        pexel = PEXEL(self.pexel_annotations_file)
+        ids = pexel.anns.keys()
+        for i, id in enumerate(ids):
+            caption = str(pexel.anns[id])
             tokens = nltk.tokenize.word_tokenize(caption.lower())
             counter.update(tokens)
 
