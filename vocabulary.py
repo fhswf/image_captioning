@@ -33,7 +33,7 @@ class Vocabulary(object):
         self.start_word = start_word
         self.end_word = end_word
         self.unk_word = unk_word
-        self.pexels_annotations_file = pexel_annotations_file
+        self.pexel_annotations_file = pexel_annotations_file
         self.coco_annotations_file = coco_annotations_file
         self.vocab_from_file = vocab_from_file
         self.get_vocab()
