@@ -42,5 +42,6 @@ class Caption(Resource):
         return data, 201
 
 api.add_resource(Caption, "/caption")
+
 if __name__ == "__main__":
     app.run(debug=True)
