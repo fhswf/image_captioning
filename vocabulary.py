@@ -2,7 +2,7 @@ import nltk
 import pickle
 import os.path
 from pycocotools.coco import COCO
-from data_loader import PEXEL
+from pexel import PEXEL
 from collections import Counter
 
 class Vocabulary(object):
