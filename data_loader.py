@@ -46,14 +46,16 @@ def get_loader(transform,
                must be in training mode (mode='train')."
 
     # Based on mode (train, val, test), obtain img_folder and annotations_file
+    pexel_annotations_file = None
+    pexel_img_folder = None
     if mode == "train":
         if vocab_from_file == True: 
             assert os.path.exists(vocab_file), "vocab_file does not exist.  \
                    Change vocab_from_file to False to create vocab_file."
         coco_img_folder = os.path.join(cocoapi_loc, "cocoapi/images/train2014/")
         coco_annotations_file = os.path.join(cocoapi_loc, "cocoapi/annotations/captions_train2014.json")
-        pexel_img_folder = os.path("/home/cgawron/pexels/images")
-        pexel_annotations_file = os.path("/home/cgawron/pexels/pexels.json")
+        pexel_img_folder = os.path.normpath("/home/cgawron/pexels/images")
+        pexel_annotations_file = os.path.normpath("/home/cgawron/pexels/pexels.json")
     if mode == "val":
         assert os.path.exists(vocab_file), "Must first generate vocab.pkl from training data."
         assert vocab_from_file == True, "Change vocab_from_file to True."
@@ -112,7 +114,7 @@ class PEXEL:
     def createIndex(self):
         anns = {}
         for entry in self.dataset:
-            anns[entry['_id']] = entry['annotation']
+            anns[int(entry['_id'])] = entry['annotation']
         self.anns = anns
 
     def getImgPath(self, id):
@@ -134,14 +136,15 @@ class JoinedDataset(data.Dataset):
             self.coco_ids = list(self.coco.anns.keys())
             self.pexel = None
             self.pexel = PEXEL(pexel_annotations_file)
-            self.pexel_ids = list(self.pexels.anns.keys())
-            
+            self.pexel_ids = list(self.pexel.anns.keys())
+            print("pexel: {} captions".format(len(self.pexel_ids)))
+             
             print("Obtaining caption lengths...")
             coco_tokens = [nltk.tokenize.word_tokenize(
                           str(self.coco.anns[self.coco_ids[index]]["caption"]).lower())
                             for index in tqdm(np.arange(len(self.coco_ids)))]
             pexel_tokens = [nltk.tokenize.word_tokenize(
-                          str(self.pexel.anns[self.pexel_ids[index]]["caption"]).lower())
+                          str(self.pexel.anns[self.pexel_ids[index]]).lower())
                             for index in tqdm(np.arange(len(self.pexel_ids)))]
             self.caption_lengths = [len(token) for token in coco_tokens + pexel_tokens]
         # If in test mode
