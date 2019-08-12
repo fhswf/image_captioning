@@ -8,7 +8,7 @@ class EncoderCNN(nn.Module):
     def __init__(self, embed_size):
         """Load the pretrained ResNet-50 and replace top fc layer."""
         super(EncoderCNN, self).__init__()
-        resnet = models.resnet50(pretrained=True)
+        resnet = models.resnext101_32x8d(pretrained=True)
         modules = list(resnet.children())[:-1] 
         self.resnet = nn.Sequential(*modules)
         self.embed = nn.Linear(resnet.fc.in_features, embed_size)
