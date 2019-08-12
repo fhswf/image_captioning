@@ -21,7 +21,7 @@ class Annotator():
         # Load cherckpoint with best model
         self.checkpoint = torch.load(os.path.join('./models', 'best-model.pkl'), 'cpu')
         # Specify values for embed_size and hidden_size - we use the same values as in training step
-        self.embed_size = 256
+        self.embed_size = 512
         self.hidden_size = 512
 
         # Get the vocabulary and its size
