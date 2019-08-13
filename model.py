@@ -25,11 +25,11 @@ class EncoderCNN(nn.Module):
 
 
 class DecoderRNN(nn.Module):
-    def __init__(self, embed_size, hidden_size, vocab_size, num_layers=1):
+    def __init__(self, embed_size, hidden_size, vocab_size, num_layers=2, dropout=0.3):
         """Set the hyper-parameters and build the layers."""
         super(DecoderRNN, self).__init__()
         self.embed = nn.Embedding(vocab_size, embed_size)
-        self.lstm = nn.LSTM(embed_size, hidden_size, num_layers, batch_first=True)
+        self.gru = nn.GRU(embed_size, hidden_size, num_layers, batch_first=True, dropout=dropout)
         self.linear = nn.Linear(hidden_size, vocab_size)
 
     def forward(self, features, captions):
@@ -37,7 +37,7 @@ class DecoderRNN(nn.Module):
         captions = captions[:,:-1]
         embeddings = self.embed(captions)
         inputs = torch.cat((features.unsqueeze(1), embeddings), 1)
-        hiddens, _ = self.lstm(inputs)
+        hiddens, _ = self.gru(inputs)
         outputs = self.linear(hiddens)
         return outputs
 
@@ -48,7 +48,7 @@ class DecoderRNN(nn.Module):
         """
         sampled_ids = []
         for i in range(max_len):
-            hiddens, states = self.lstm(inputs, states)
+            hiddens, states = self.gru(inputs, states)
             outputs = self.linear(hiddens.squeeze(1))
             # Get the index (in the vocabulary) of the most likely integer that
             # represents a word
@@ -69,7 +69,7 @@ class DecoderRNN(nn.Module):
             all_candidates = []
             # Predict the next word idx for each of the top sequences
             for idx_seq in idx_sequences:
-                hiddens, states = self.lstm(idx_seq[2], idx_seq[3])
+                hiddens, states = self.gru(idx_seq[2], idx_seq[3])
                 outputs = self.linear(hiddens.squeeze(1))
                 # Transform outputs to log probabilities to avoid floating-point 
                 # underflow caused by multiplying very small probabilities
