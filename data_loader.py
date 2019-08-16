@@ -156,6 +156,8 @@ class JoinedDataset(data.Dataset):
             
             image = self.transform(image)
 
+            orig = caption
+
             # Convert caption to tensor of word ids.
             tokens = nltk.tokenize.word_tokenize(str(caption).lower())
             caption = []
@@ -165,7 +167,7 @@ class JoinedDataset(data.Dataset):
             caption = torch.Tensor(caption).long()
 
             # Return pre-processed image and caption tensors
-            return image, caption
+            return image, caption, orig, img_id
 
         # Obtain image if in test mode
         else:
