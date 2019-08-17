@@ -25,11 +25,11 @@ def evaluate(loader, encoder, decoder, criterion, vocab):
     # Disable gradient calculation because we are in inference mode
     with torch.no_grad():
         for batch in loader:
-            images, captions, orig, img_id = batch[0], batch[1], batch[2], batch[3]
+            images, img_id = batch[0], batch[1]
             #print('images: {}'.format(images))
             #print('captions: {}'.format(captions))
             #print('orig: {}'.format(orig))
-            #print('img_id: {}'.format(img_id))
+            print('Batch: img_id: {}'.format(img_id))
 
             # Move to GPU if CUDA is available
             #if torch.cuda.is_available():

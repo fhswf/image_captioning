@@ -114,7 +114,7 @@ class JoinedDataset(data.Dataset):
             end_word, unk_word, coco_annotations_file, pexel_annotations_file, vocab_from_file)
         self.coco_img_folder = coco_img_folder
         self.pexel_img_folder = pexel_img_folder
-        if self.mode == "train" or self.mode == "val":
+        if self.mode == "train":
             self.coco = COCO(coco_annotations_file)
             self.coco_ids = list(self.coco.anns.keys())
             self.pexel = None
@@ -130,6 +130,11 @@ class JoinedDataset(data.Dataset):
                           str(self.pexel.anns[self.pexel_ids[index]]).lower())
                             for index in tqdm(np.arange(len(self.pexel_ids)))]
             self.caption_lengths = [len(token) for token in coco_tokens + pexel_tokens]
+        elif self.mode == "val":
+            self.coco = COCO(coco_annotations_file)
+            self.coco_ids = list(self.coco.imgs.keys())
+            self.pexel = None
+            self.pexel_ids = []
         # If in test mode
         else:
             test_info = json.loads(open(coco_annotations_file).read())
@@ -137,7 +142,7 @@ class JoinedDataset(data.Dataset):
         
     def __getitem__(self, index):
         # Obtain image and caption if in training or validation mode
-        if self.mode == "train" or self.mode == "val":
+        if self.mode == "train":
             if index >= len(self.coco_ids):
                 index -= len(self.coco_ids)
                 ann_id = self.pexel_ids[index]
@@ -168,6 +173,14 @@ class JoinedDataset(data.Dataset):
 
             # Return pre-processed image and caption tensors
             return image, caption, orig, img_id
+
+        elif self.mode == "val":
+            img_id = self.coco_ids[index]
+            path = self.coco.loadImgs(img_id)[0]["file_name"]
+            image = Image.open(os.path.join(self.coco_img_folder, path)).convert("RGB")
+            image = self.transform(image)
+
+            return image, img_id
 
         # Obtain image if in test mode
         else:
