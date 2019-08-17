@@ -13,7 +13,7 @@ from pycocoevalcap.eval import COCOEvalCap
 from collections import namedtuple
 
 
-def evaluate(loader, encoder, decoder, criterion, vocab, cocores):
+def evaluate(loader, encoder, decoder, criterion, vocab):
     """Evaluate the model for one epoch using the provided parameters. 
     Return the epoch's average validation loss and Bleu-4 score."""
 
@@ -21,7 +21,8 @@ def evaluate(loader, encoder, decoder, criterion, vocab, cocores):
     encoder.eval()
     decoder.eval()
 
-    imgToAnns = []
+    cocoRes = COCO()
+    anns = []
 
     # Disable gradient calculation because we are in inference mode
     with torch.no_grad():
@@ -38,11 +39,16 @@ def evaluate(loader, encoder, decoder, criterion, vocab, cocores):
                 slice = features[i].unsqueeze(0)
                 outputs = decoder.sample_beam_search(slice)
                 sentence = clean_sentence(outputs[0], vocab)
-                id = img_id[i]
+                id = img_id[i].item()
                 #print('id: {}, cap: {}'.format(id, sentence))
-                imgToAnns.append({'image_id': id.item(), 'caption': sentence})
+                anns.append({'image_id': id, 'caption': sentence})
              
-    return imgToAnns
+    for id, ann in enumerate(anns):
+        ann['id'] = id
+    
+    cocoRes.dataset['annotations'] = anns
+    cocoRes.createIndex()
+    return cocoRes
 
 transform_val = transforms.Compose([ 
     transforms.Resize(256),                          # smaller edge of image resized to 256
@@ -57,8 +63,10 @@ embed_size = 512        # dimensionality of image and word embeddings
 hidden_size = 512       # number of features in hidden state of the RNN decoder
 num_epochs = 10          # number of training epochs
 
+annFile = "coco/annotations/captions_val2014.json"
 
-COCORes = namedtuple('COCORes', 'imgToAnns')
+coco = COCO(annFile)
+
 
 loader = get_loader(transform=transform_val,
     mode='val',
@@ -95,7 +103,23 @@ decoder.load_state_dict(checkpoint['decoder'])
 #cocoEval.params['image_id'] = imgToAnns.keys()
 #cocoEval.evaluate()
 
-res = evaluate(loader, encoder, decoder, criterion, loader.dataset.vocab)
-f = open('res.json', 'wt')
-json.dump(res, f, indent=1)
+cocoRes = evaluate(loader, encoder, decoder, criterion, loader.dataset.vocab)
+print('cocoRes: {}'.format(cocoRes.dataset))
+cocoEval = COCOEvalCap(coco, cocoRes)
+imgIds = set([ann['image_id'] for ann in cocoRes.dataset['annotations']])
+cocoEval.params['image_id'] = imgIds
+cocoEval.evaluate()
+
+def getCIDEr(ann):
+    return ann['cider']
+
+anns = cocoRes.dataset['annotations']
+for ann in anns:
+    ann['cider'] = cocoEval.imgToEval[ann['image_id']]['CIDEr']
+
+anns.sort(key = getCIDEr)
+result = { 'eval': cocoEval.eval, 'annotations': anns}
+
+f = open('result.json', 'wt')
+json.dump(result, f, indent=1)
 f.close()
