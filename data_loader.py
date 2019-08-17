@@ -84,22 +84,11 @@ def get_loader(transform,
                           pexel_annotations_file=pexel_annotations_file,
                           pexel_img_folder=pexel_img_folder)
 
-    if mode == "train":
-        # Randomly sample a caption length, and sample indices with that length.
-        indices = dataset.get_indices()
-        # Create and assign a batch sampler to retrieve a batch with the sampled indices.
-        initial_sampler = data.sampler.SubsetRandomSampler(indices=indices)
-        # data loader for COCO dataset.
-        data_loader = data.DataLoader(dataset=dataset, 
-                                      num_workers=num_workers,
-                                      batch_sampler=data.sampler.BatchSampler(sampler=initial_sampler,
-                                                                              batch_size=dataset.batch_size,
-                                                                              drop_last=False))
-    else:
-        data_loader = data.DataLoader(dataset=dataset,
-                                      batch_size=dataset.batch_size,
-                                      shuffle=True,
-                                      num_workers=num_workers)
+ 
+    data_loader = data.DataLoader(dataset=dataset,
+                                  batch_size=dataset.batch_size,
+                                  shuffle=True,
+                                  num_workers=num_workers)
 
     return data_loader
 
@@ -130,6 +119,8 @@ class JoinedDataset(data.Dataset):
                           str(self.pexel.anns[self.pexel_ids[index]]).lower())
                             for index in tqdm(np.arange(len(self.pexel_ids)))]
             self.caption_lengths = [len(token) for token in coco_tokens + pexel_tokens]
+            self.max_length = max(self.caption_lengths)
+
         elif self.mode == "val":
             self.coco = COCO(coco_annotations_file)
             self.coco_ids = list(self.coco.imgs.keys())
@@ -168,11 +159,12 @@ class JoinedDataset(data.Dataset):
             caption = []
             caption.append(self.vocab(self.vocab.start_word))
             caption.extend([self.vocab(token) for token in tokens])
-            caption.append(self.vocab(self.vocab.end_word))
+            for i in range(len(caption), self.max_length+2):
+                caption.append(self.vocab(self.vocab.end_word))
             caption = torch.Tensor(caption).long()
 
             # Return pre-processed image and caption tensors
-            return image, caption, orig, img_id
+            return image, caption
 
         elif self.mode == "val":
             img_id = self.coco_ids[index]
@@ -194,16 +186,9 @@ class JoinedDataset(data.Dataset):
             # Return original image and pre-processed image tensor
             return orig_image, image
 
-
-    def get_indices(self):
-        sel_length = np.random.choice(self.caption_lengths)
-        all_indices = np.where([self.caption_lengths[i] == \
-                               sel_length for i in np.arange(len(self.caption_lengths))])[0]
-        indices = list(np.random.choice(all_indices, size=self.batch_size))
-        return indices
-
     def __len__(self):
         if self.mode == "train" or self.mode == "val":
             return len(self.coco_ids) + len(self.pexel_ids)
         else:
             return len(self.paths)
+
