@@ -53,21 +53,21 @@ def get_loader(transform,
         if vocab_from_file == True: 
             assert os.path.exists(vocab_file), "vocab_file does not exist.  \
                    Change vocab_from_file to False to create vocab_file."
-        coco_img_folder = os.path.join(cocoapi_loc, "cocoapi/images/train2014/")
-        coco_annotations_file = os.path.join(cocoapi_loc, "cocoapi/annotations/captions_train2014.json")
+        coco_img_folder = os.path.join(cocoapi_loc, "coco/images/train2014/")
+        coco_annotations_file = os.path.join(cocoapi_loc, "coco/annotations/captions_train2014.json")
         pexel_img_folder = os.path.normpath("/home/cgawron/pexels/images")
         pexel_annotations_file = os.path.normpath("/home/cgawron/pexels/pexels.json")
     if mode == "val":
         assert os.path.exists(vocab_file), "Must first generate vocab.pkl from training data."
         assert vocab_from_file == True, "Change vocab_from_file to True."
-        coco_img_folder = os.path.join(cocoapi_loc, "cocoapi/images/val2014/")
-        coco_annotations_file = os.path.join(cocoapi_loc, "cocoapi/annotations/captions_val2014.json")
+        coco_img_folder = os.path.join(cocoapi_loc, "coco/images/val2014/")
+        coco_annotations_file = os.path.join(cocoapi_loc, "coco/annotations/captions_val2014.json")
     if mode == "test":
         assert batch_size == 1, "Please change batch_size to 1 if testing your model."
         assert os.path.exists(vocab_file), "Must first generate vocab.pkl from training data."
         assert vocab_from_file == True, "Change vocab_from_file to True."
-        coco_img_folder = os.path.join(cocoapi_loc, "cocoapi/images/test2014/")
-        coco_annotations_file = os.path.join(cocoapi_loc, "cocoapi/annotations/image_info_test2014.json")
+        coco_img_folder = os.path.join(cocoapi_loc, "coco/images/test2014/")
+        coco_annotations_file = os.path.join(cocoapi_loc, "coco/annotations/image_info_test2014.json")
     
     # COCO caption dataset
     dataset = JoinedDataset(transform=transform,

@@ -103,3 +103,6 @@ ENV/
 
 # others
 cocoapi/
+coco/
+models/
+*.pkl

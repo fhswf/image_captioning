@@ -37,16 +37,15 @@ def evaluate(loader, encoder, decoder, criterion, vocab):
 
             # Pass the inputs through the CNN-RNN model
             features = encoder(images).unsqueeze(1)
-            outputs = decoder.sample_beam_search(features)
-            size = img_id.size()[0]
-            for i in range(size):
-                sentence = clean_sentence(outputs[i], vocab)
+            for i in range(img_id.size()[0]):
+                slice = features[i].unsqueeze(0)
+                outputs = decoder.sample_beam_search(slice)
+                sentence = clean_sentence(outputs[0], vocab)
                 id = img_id[i]
-                #print('id: {}, cap: {}'.format(id, sentence))
+                print('id: {}, cap: {}'.format(id, sentence))
                 imgToAnns.append({'image_id': id.item(), 'caption': sentence})
-
-                #if len(imgToAnns) > 10:
-                #    return imgToAnns
+            
+            print('batch done')
  
     return imgToAnns
 
@@ -57,7 +56,7 @@ transform_val = transforms.Compose([
     transforms.Normalize((0.485, 0.456, 0.406),      # normalize image for pre-trained model
                          (0.229, 0.224, 0.225))])
 
-batch_size = 1
+batch_size = 4
 vocab_threshold = 5
 embed_size = 512        # dimensionality of image and word embeddings
 hidden_size = 512       # number of features in hidden state of the RNN decoder
@@ -73,7 +72,11 @@ loader = get_loader(transform=transform_val,
 vocab_size = len(loader.dataset.vocab)
 
 criterion = nn.CrossEntropyLoss().cuda() if torch.cuda.is_available() else nn.CrossEntropyLoss()
-checkpoint = torch.load(os.path.join('./models', 'best-model.pkl'))
+if torch.cuda.is_available():
+    map_location=torch.device('cuda')
+else:
+    map_location=torch.device('cpu')
+checkpoint = torch.load(os.path.join('./models', 'best-model.pkl'), map_location=map_location)
 
 encoder = EncoderCNN(embed_size)
 decoder = DecoderRNN(embed_size, hidden_size, vocab_size)
