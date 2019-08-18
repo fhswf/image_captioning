@@ -14,6 +14,7 @@ import torch.utils.data as data
 import numpy as np
 import requests
 import time
+import tqdm
 
 from data_loader import get_loader
 from model import EncoderCNN, DecoderRNN
@@ -35,7 +36,8 @@ def train(train_loader, encoder, decoder, criterion, optimizer, vocab_size,
     i_step = 0
     
     # Obtain the batch
-    for batch in train_loader:
+    pbar = tqdm(train_loader)
+    for batch in pbar:
         i_step += 1
         images, captions, lengths = batch[0], batch[1], batch[2]
              
@@ -71,15 +73,9 @@ def train(train_loader, encoder, decoder, criterion, optimizer, vocab_size,
         stats = "Epoch %d, Train step [%d/%d], %ds, Loss: %.4f, Perplexity: %5.4f" \
                 % (epoch, i_step, len(train_loader), time.time() - start_train_time,
                    loss.item(), np.exp(loss.item()))
-        # Print training statistics (on same line)
-        print("\r" + stats, end="")
-        sys.stdout.flush()
-
-        # Print training stats (on different line), reset time and save checkpoint
-        if i_step % 100 == 0:
-            print("\r" + stats)
-            start_train_time = time.time()
-    
+        pbar.set_description(state)
+            
+    epoch += 1
     filename = os.path.join("./models", "train-model-{}.pkl".format(epoch))
     save_checkpoint(filename, encoder, decoder, optimizer, total_loss, epoch)
     return total_loss / total_step
