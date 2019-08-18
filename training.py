@@ -4,12 +4,11 @@ import time
 
 import numpy as np
 from tqdm import tqdm
-from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
 import torch.utils.data as data
+from torch.autograd import Variable
 from torchvision import transforms
 
 from pycocotools.coco import COCO
@@ -33,19 +32,19 @@ class Trainer:
         self.optimizer = optimizer
         self.vocab_size = len(self.train_loader.dataset.vocab)
         self.vocab = self.train_loader.dataset.vocab
-        if not criterion == None:
+        if criterion is None:
             self.criterion = criterion
         else: 
             pad_idx = self.train_loader.dataset.vocab.word2idx['<pad>']
             self.criterion = nn.CrossEntropyLoss(ignore_index=pad_idx)
         
         if torch.cuda.is_available():
-            self.map_location=torch.device('cuda')
+            self.map_location = torch.device('cuda')
             self.criterion.cuda()
             self.encoder.cuda()
             self.decoder.cuda()
         else:
-            self.map_location=torch.device('cpu')
+            self.map_location = torch.device('cpu')
 
         self.cider = []
 
@@ -60,7 +59,7 @@ class Trainer:
         self.encoder.load_state_dict(checkpoint['encoder'])
         self.decoder.load_state_dict(checkpoint['decoder'])
         self.epoch = checkpoint['epoch']
-        #self.cider = checkpoint['cider']
+        self.cider = checkpoint['cider']
         print('Successfully loaded epoch {}'.format(self.epoch))
 
     def save_as(self, file_name):
