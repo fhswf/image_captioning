@@ -57,10 +57,10 @@ class Vocabulary(object):
         """Populate the dictionaries for converting tokens to integers 
         (and vice-versa)."""
         self.init_vocab()
+        self.add_word(self.pad_word)
         self.add_word(self.start_word)
         self.add_word(self.end_word)
         self.add_word(self.unk_word)
-        self.add_word(self.pad_word)
         self.add_captions()
 
     def init_vocab(self):
