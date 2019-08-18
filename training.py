@@ -78,7 +78,7 @@ def train(train_loader, encoder, decoder, criterion, optimizer, vocab_size,
     epoch += 1
     filename = os.path.join("./models", "train-model-{}.pkl".format(epoch))
     save_checkpoint(filename, encoder, decoder, optimizer, total_loss, epoch)
-    return total_loss / total_step
+    return total_loss / i_step
 
 def save_checkpoint(filename, encoder, decoder, optimizer, total_loss, epoch, train_step=1):
     """Save the following to filename at checkpoints: encoder, decoder,
