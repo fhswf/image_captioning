@@ -96,15 +96,9 @@ checkpoint = torch.load(os.path.join('./models', 'best-model.pkl'), map_location
 encoder.load_state_dict(checkpoint['encoder'])
 decoder.load_state_dict(checkpoint['decoder'])
 
-
-#coco = COCO("cocoapi/annotations/captions_val2014.json")
-#cocoRes = COCORes(imgToAnns)
-#cocoEval = COCOEvalCap(coco, cocoRes)
-#cocoEval.params['image_id'] = imgToAnns.keys()
-#cocoEval.evaluate()
-
+# Create captions for validation images
 cocoRes = evaluate(loader, encoder, decoder, criterion, loader.dataset.vocab)
-print('cocoRes: {}'.format(cocoRes.dataset))
+
 cocoEval = COCOEvalCap(coco, cocoRes)
 imgIds = set([ann['image_id'] for ann in cocoRes.dataset['annotations']])
 cocoEval.params['image_id'] = imgIds

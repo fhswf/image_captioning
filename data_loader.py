@@ -20,6 +20,7 @@ def get_loader(transform,
                start_word="<start>",
                end_word="<end>",
                unk_word="<unk>",
+               pad_word="<pad>",
                vocab_from_file=True,
                num_workers=0,
                cocoapi_loc="."):
@@ -78,6 +79,7 @@ def get_loader(transform,
                           start_word=start_word,
                           end_word=end_word,
                           unk_word=unk_word,
+                          pad_word=pad_word,
                           coco_annotations_file=coco_annotations_file,
                           vocab_from_file=vocab_from_file,
                           coco_img_folder=coco_img_folder,
@@ -95,12 +97,12 @@ def get_loader(transform,
 class JoinedDataset(data.Dataset):
     
     def __init__(self, transform, mode, batch_size, vocab_threshold, vocab_file, start_word, 
-        end_word, unk_word, vocab_from_file, coco_annotations_file, coco_img_folder, pexel_annotations_file, pexel_img_folder):
+        end_word, unk_word, pad_word, vocab_from_file, coco_annotations_file, coco_img_folder, pexel_annotations_file, pexel_img_folder):
         self.transform = transform
         self.mode = mode
         self.batch_size = batch_size
         self.vocab = Vocabulary(vocab_threshold, vocab_file, start_word,
-            end_word, unk_word, coco_annotations_file, pexel_annotations_file, vocab_from_file)
+            end_word, unk_word, pad_word, coco_annotations_file, pexel_annotations_file, vocab_from_file)
         self.coco_img_folder = coco_img_folder
         self.pexel_img_folder = pexel_img_folder
         if self.mode == "train":
@@ -159,12 +161,14 @@ class JoinedDataset(data.Dataset):
             caption = []
             caption.append(self.vocab(self.vocab.start_word))
             caption.extend([self.vocab(token) for token in tokens])
+            caption.append(self.vocab(self.vocab.end_word))
+            length = len(caption)
             for i in range(len(caption), self.max_length+2):
-                caption.append(self.vocab(self.vocab.end_word))
+                caption.append(self.vocab(self.vocab.pad_word))
             caption = torch.Tensor(caption).long()
 
             # Return pre-processed image and caption tensors
-            return image, caption
+            return image, caption, length
 
         elif self.mode == "val":
             img_id = self.coco_ids[index]

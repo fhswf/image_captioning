@@ -37,18 +37,25 @@ def train(train_loader, encoder, decoder, criterion, optimizer, vocab_size,
     # Obtain the batch
     for batch in train_loader:
         i_step += 1
-        images, captions = batch[0], batch[1]
+        images, captions, lengths = batch[0], batch[1], batch[2]
              
         # Move to GPU if CUDA is available
         if torch.cuda.is_available():
             images = images.cuda()
             captions = captions.cuda()
+            lengths = lengths.cuda()
         # Pass the inputs through the CNN-RNN model
         features = encoder(images)
-        outputs = decoder(features, captions)
+        outputs = decoder(features, captions, lengths)
 
+        #print("1: outputs: {}, captions: {}".format(outputs.size(), captions.size()))
         # Calculate the batch loss
-        loss = criterion(outputs.view(-1, vocab_size), captions.view(-1))
+        outputs = outputs.view(-1, vocab_size)
+        captions = captions.view(-1)
+        #print("2: outputs: {}, captions: {}".format(outputs.size(), captions.size()))
+
+        loss = criterion(outputs, captions)
+
         # Zero the gradients. Since the backward() function accumulates 
         # gradients, and we don’t want to mix up gradients between minibatches,
         # we have to zero them out at the start of a new minibatch
@@ -62,7 +69,7 @@ def train(train_loader, encoder, decoder, criterion, optimizer, vocab_size,
 
         # Get training statistics
         stats = "Epoch %d, Train step [%d/%d], %ds, Loss: %.4f, Perplexity: %5.4f" \
-                % (epoch, time.time() - start_train_time,
+                % (epoch, i_step, len(train_loader), time.time() - start_train_time,
                    loss.item(), np.exp(loss.item()))
         # Print training statistics (on same line)
         print("\r" + stats, end="")
@@ -87,7 +94,7 @@ def save_checkpoint(filename, encoder, decoder, optimizer, total_loss, epoch, tr
                }, filename)
 
 # Set values for the training variables
-batch_size = 64         # batch size
+batch_size = 128        # batch size
 vocab_threshold = 5     # minimum word count threshold
 vocab_from_file = True  # if True, load existing vocab file
 embed_size = 512        # dimensionality of image and word embeddings
@@ -123,7 +130,8 @@ if torch.cuda.is_available():
     decoder.cuda()
 
 # Define the loss function
-criterion = nn.CrossEntropyLoss().cuda() if torch.cuda.is_available() else nn.CrossEntropyLoss()
+pad_idx = train_loader.dataset.vocab.word2idx['<pad>']
+criterion = nn.CrossEntropyLoss(ignore_index=pad_idx).cuda() if torch.cuda.is_available() else nn.CrossEntropyLoss()
 
 # Specify the learnable parameters of the model
 params = list(decoder.parameters()) + list(encoder.embed.parameters()) + list(encoder.bn.parameters())
@@ -138,9 +146,11 @@ else:
 checkpoint = torch.load(os.path.join('./models', 'best-model.pkl'), map_location=map_location)
 
 # Load the pre-trained weights
-encoder.load_state_dict(checkpoint['encoder'])
-decoder.load_state_dict(checkpoint['decoder'])
-epoch = checkpoint['epoch']
+#encoder.load_state_dict(checkpoint['encoder'])
+#decoder.load_state_dict(checkpoint['decoder'])
+#epoch = checkpoint['epoch']
+
+epoch = 1
 
 train_loss = train(train_loader, encoder, decoder, criterion, optimizer, 
                    vocab_size, epoch)
