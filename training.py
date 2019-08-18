@@ -64,6 +64,7 @@ class Trainer:
         print('Successfully loaded epoch {}'.format(self.epoch))
 
     def saveAs(self, fileName):
+        """Save the training state."""
         torch.save({"encoder": encoder.state_dict(),
                     "decoder": decoder.state_dict(),
                     "total_loss": total_loss,
@@ -72,7 +73,14 @@ class Trainer:
                    }, filename)
 
     def save(self):
-        """Save the following : encoder, decoder, total_loss, and epoch."""
+        """Save the training state.
+        
+        The following values are saved: 
+        - encoder parameter, 
+        - decoder parameters, 
+        - current epoch,
+        - list of CIDEr scores from the evaluation of past epochs.
+        """
         saveAs(os.path.join("./models", "current-model.pkl"))
         saveAs(os.path.join("./models", "epoch-model-{}.pkl".format(self.epoch)))
 
@@ -106,7 +114,7 @@ class Trainer:
         i_step = 0
     
         # Obtain the batch
-        pbar = tqdm(self.train_loader, bar_format="{postfix:.2f}", postfix=0.0)
+        pbar = tqdm(self.train_loader, bar_format="{postfix[0]:.2f} avg={postfix[1]:.2f}", postfix=[Inf, Inf])
         pbar.set_description('training epoch {}'.format(self.epoch));
         for batch in pbar:
             i_step += 1
@@ -144,7 +152,7 @@ class Trainer:
             stats = "Epoch %d, Train step [%d/%d], %ds, Loss: %.4f, Perplexity: %5.4f" \
                     % (epoch, i_step, len(train_loader), time.time() - start_train_time,
                        loss.item(), np.exp(loss.item()))
-            pbar.set_postfix(loss.item())
+            pbar.set_postfix([loss.item(), total_loss/i_step])
             
         self.epoch += 1
         self.save()
@@ -189,7 +197,7 @@ class Trainer:
         cocoRes.dataset['annotations'] = anns
         cocoRes.createIndex()
 
-        cocoEval = COCOEvalCap(self.val_loader.coco, cocoRes)
+        cocoEval = COCOEvalCap(self.val_loader.dataset.coco, cocoRes)
         imgIds = set([ann['image_id'] for ann in cocoRes.dataset['annotations']])
         cocoEval.params['image_id'] = imgIds
         cocoEval.evaluate()
