@@ -63,17 +63,22 @@ class Trainer:
         self.cider = checkpoint['cider']
         print('Successfully loaded epoch {}'.format(self.epoch))
 
-    def saveAs(self, fileName):
-        """Save the training state."""
-        torch.save({"encoder": encoder.state_dict(),
-                    "decoder": decoder.state_dict(),
-                    "total_loss": total_loss,
-                    "cider": cider,
-                    "epoch": epoch
-                   }, filename)
+    def save_as(self, file_name):
+        """Save the training state in a pickle file.
+        
+        Parameters
+        ----------
+        file_name : str
+            Name of the file to save.
+        """
+        torch.save({"encoder": self.encoder.state_dict(),
+                    "decoder": self.decoder.state_dict(),
+                    "cider": self.cider,
+                    "epoch": self.epoch
+                   }, file_name)
 
     def save(self):
-        """Save the training state.
+        """Save the training state in a pickle file.
         
         The following values are saved: 
         - encoder parameter, 
@@ -81,8 +86,8 @@ class Trainer:
         - current epoch,
         - list of CIDEr scores from the evaluation of past epochs.
         """
-        saveAs(os.path.join("./models", "current-model.pkl"))
-        saveAs(os.path.join("./models", "epoch-model-{}.pkl".format(self.epoch)))
+        self.save_as(os.path.join("./models", "current-model.pkl"))
+        self.save_as(os.path.join("./models", "epoch-model-{}.pkl".format(self.epoch)))
 
     def clean_sentence(self, word_idx_list):
         """Take a list of word ids and a vocabulary from a dataset as inputs
