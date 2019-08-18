@@ -59,7 +59,9 @@ class Trainer:
         # Load the pre-trained weights
         self.encoder.load_state_dict(checkpoint['encoder'])
         self.decoder.load_state_dict(checkpoint['decoder'])
-        #self.cider = checkpoint['cider']
+        self.epoch = checkpoint['epoch']
+        self.cider = checkpoint['cider']
+        print('Successfully loaded epoch {}'.format(self.epoch))
 
     def saveAs(self, fileName):
         torch.save({"encoder": encoder.state_dict(),
@@ -104,7 +106,7 @@ class Trainer:
         i_step = 0
     
         # Obtain the batch
-        pbar = tqdm(self.train_loader, bar_format="{postfix[0]:.2f}", postfix=0.0)
+        pbar = tqdm(self.train_loader, bar_format="{postfix:.2f}", postfix=0.0)
         pbar.set_description('training epoch {}'.format(self.epoch));
         for batch in pbar:
             i_step += 1
@@ -198,7 +200,7 @@ class Trainer:
         else:
             last_cider = self.cider[self.epoch-1]
 
-        self.cider[self.epoch] > last_cider:
+        if self.cider[self.epoch] > last_cider:
             print('CIDEr improved: {:.2f} => {:.2f}'.format(last_cider, self.cider[self.epoch]))
             saveAs(os.path.join("./models", "best-model.pkl"))
 
@@ -259,6 +261,7 @@ trainer = Trainer(train_loader, val_loader, encoder, decoder, optimizer)
 
 # trainer.train()
 trainer.load()
+
 # if cider is missing for current epoch, evaluater first
 if len(trainer.cider) < trainer.epoch:
     print('Epoch {} not yet evaluated'.format(trainer.epoch))
