@@ -20,6 +20,7 @@ def get_loader(transform,
                start_word="<start>",
                end_word="<end>",
                unk_word="<unk>",
+               pad_word="<pad>",
                vocab_from_file=True,
                num_workers=0,
                cocoapi_loc="."):
@@ -53,21 +54,21 @@ def get_loader(transform,
         if vocab_from_file == True: 
             assert os.path.exists(vocab_file), "vocab_file does not exist.  \
                    Change vocab_from_file to False to create vocab_file."
-        coco_img_folder = os.path.join(cocoapi_loc, "cocoapi/images/train2014/")
-        coco_annotations_file = os.path.join(cocoapi_loc, "cocoapi/annotations/captions_train2014.json")
+        coco_img_folder = os.path.join(cocoapi_loc, "coco/images/train2014/")
+        coco_annotations_file = os.path.join(cocoapi_loc, "coco/annotations/captions_train2014.json")
         pexel_img_folder = os.path.normpath("/home/cgawron/pexels/images")
         pexel_annotations_file = os.path.normpath("/home/cgawron/pexels/pexels.json")
     if mode == "val":
         assert os.path.exists(vocab_file), "Must first generate vocab.pkl from training data."
         assert vocab_from_file == True, "Change vocab_from_file to True."
-        coco_img_folder = os.path.join(cocoapi_loc, "cocoapi/images/val2014/")
-        coco_annotations_file = os.path.join(cocoapi_loc, "cocoapi/annotations/captions_val2014.json")
+        coco_img_folder = os.path.join(cocoapi_loc, "coco/images/val2014/")
+        coco_annotations_file = os.path.join(cocoapi_loc, "coco/annotations/captions_val2014.json")
     if mode == "test":
         assert batch_size == 1, "Please change batch_size to 1 if testing your model."
         assert os.path.exists(vocab_file), "Must first generate vocab.pkl from training data."
         assert vocab_from_file == True, "Change vocab_from_file to True."
-        coco_img_folder = os.path.join(cocoapi_loc, "cocoapi/images/test2014/")
-        coco_annotations_file = os.path.join(cocoapi_loc, "cocoapi/annotations/image_info_test2014.json")
+        coco_img_folder = os.path.join(cocoapi_loc, "coco/images/test2014/")
+        coco_annotations_file = os.path.join(cocoapi_loc, "coco/annotations/image_info_test2014.json")
     
     # COCO caption dataset
     dataset = JoinedDataset(transform=transform,
@@ -78,43 +79,33 @@ def get_loader(transform,
                           start_word=start_word,
                           end_word=end_word,
                           unk_word=unk_word,
+                          pad_word=pad_word,
                           coco_annotations_file=coco_annotations_file,
                           vocab_from_file=vocab_from_file,
                           coco_img_folder=coco_img_folder,
                           pexel_annotations_file=pexel_annotations_file,
                           pexel_img_folder=pexel_img_folder)
 
-    if mode == "train":
-        # Randomly sample a caption length, and sample indices with that length.
-        indices = dataset.get_indices()
-        # Create and assign a batch sampler to retrieve a batch with the sampled indices.
-        initial_sampler = data.sampler.SubsetRandomSampler(indices=indices)
-        # data loader for COCO dataset.
-        data_loader = data.DataLoader(dataset=dataset, 
-                                      num_workers=num_workers,
-                                      batch_sampler=data.sampler.BatchSampler(sampler=initial_sampler,
-                                                                              batch_size=dataset.batch_size,
-                                                                              drop_last=False))
-    else:
-        data_loader = data.DataLoader(dataset=dataset,
-                                      batch_size=dataset.batch_size,
-                                      shuffle=True,
-                                      num_workers=num_workers)
+ 
+    data_loader = data.DataLoader(dataset=dataset,
+                                  batch_size=dataset.batch_size,
+                                  shuffle=True,
+                                  num_workers=num_workers)
 
     return data_loader
 
 class JoinedDataset(data.Dataset):
     
     def __init__(self, transform, mode, batch_size, vocab_threshold, vocab_file, start_word, 
-        end_word, unk_word, vocab_from_file, coco_annotations_file, coco_img_folder, pexel_annotations_file, pexel_img_folder):
+        end_word, unk_word, pad_word, vocab_from_file, coco_annotations_file, coco_img_folder, pexel_annotations_file, pexel_img_folder):
         self.transform = transform
         self.mode = mode
         self.batch_size = batch_size
         self.vocab = Vocabulary(vocab_threshold, vocab_file, start_word,
-            end_word, unk_word, coco_annotations_file, pexel_annotations_file, vocab_from_file)
+            end_word, unk_word, pad_word, coco_annotations_file, pexel_annotations_file, vocab_from_file)
         self.coco_img_folder = coco_img_folder
         self.pexel_img_folder = pexel_img_folder
-        if self.mode == "train" or self.mode == "val":
+        if self.mode == "train":
             self.coco = COCO(coco_annotations_file)
             self.coco_ids = list(self.coco.anns.keys())
             self.pexel = None
@@ -130,6 +121,13 @@ class JoinedDataset(data.Dataset):
                           str(self.pexel.anns[self.pexel_ids[index]]).lower())
                             for index in tqdm(np.arange(len(self.pexel_ids)))]
             self.caption_lengths = [len(token) for token in coco_tokens + pexel_tokens]
+            self.max_length = max(self.caption_lengths)
+
+        elif self.mode == "val":
+            self.coco = COCO(coco_annotations_file)
+            self.coco_ids = list(self.coco.imgs.keys())
+            self.pexel = None
+            self.pexel_ids = []
         # If in test mode
         else:
             test_info = json.loads(open(coco_annotations_file).read())
@@ -137,7 +135,7 @@ class JoinedDataset(data.Dataset):
         
     def __getitem__(self, index):
         # Obtain image and caption if in training or validation mode
-        if self.mode == "train" or self.mode == "val":
+        if self.mode == "train":
             if index >= len(self.coco_ids):
                 index -= len(self.coco_ids)
                 ann_id = self.pexel_ids[index]
@@ -156,16 +154,29 @@ class JoinedDataset(data.Dataset):
             
             image = self.transform(image)
 
+            orig = caption
+
             # Convert caption to tensor of word ids.
             tokens = nltk.tokenize.word_tokenize(str(caption).lower())
             caption = []
             caption.append(self.vocab(self.vocab.start_word))
             caption.extend([self.vocab(token) for token in tokens])
             caption.append(self.vocab(self.vocab.end_word))
+            length = len(caption)
+            for i in range(len(caption), self.max_length+2):
+                caption.append(self.vocab(self.vocab.pad_word))
             caption = torch.Tensor(caption).long()
 
             # Return pre-processed image and caption tensors
-            return image, caption
+            return image, caption, length
+
+        elif self.mode == "val":
+            img_id = self.coco_ids[index]
+            path = self.coco.loadImgs(img_id)[0]["file_name"]
+            image = Image.open(os.path.join(self.coco_img_folder, path)).convert("RGB")
+            image = self.transform(image)
+
+            return image, img_id
 
         # Obtain image if in test mode
         else:
@@ -179,16 +190,9 @@ class JoinedDataset(data.Dataset):
             # Return original image and pre-processed image tensor
             return orig_image, image
 
-
-    def get_indices(self):
-        sel_length = np.random.choice(self.caption_lengths)
-        all_indices = np.where([self.caption_lengths[i] == \
-                               sel_length for i in np.arange(len(self.caption_lengths))])[0]
-        indices = list(np.random.choice(all_indices, size=self.batch_size))
-        return indices
-
     def __len__(self):
         if self.mode == "train" or self.mode == "val":
             return len(self.coco_ids) + len(self.pexel_ids)
         else:
             return len(self.paths)
+

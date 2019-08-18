@@ -13,6 +13,7 @@ class Vocabulary(object):
         start_word="<start>",
         end_word="<end>",
         unk_word="<unk>",
+        pad_word="<pad>",
         coco_annotations_file="./cocoapi/annotations/captions_train2014.json",
         pexel_annotations_file="/home/cgawron/pexels/pexels.json",
         vocab_from_file=False):
@@ -33,6 +34,7 @@ class Vocabulary(object):
         self.start_word = start_word
         self.end_word = end_word
         self.unk_word = unk_word
+        self.pad_word = pad_word
         self.pexel_annotations_file = pexel_annotations_file
         self.coco_annotations_file = coco_annotations_file
         self.vocab_from_file = vocab_from_file
@@ -55,6 +57,7 @@ class Vocabulary(object):
         """Populate the dictionaries for converting tokens to integers 
         (and vice-versa)."""
         self.init_vocab()
+        self.add_word(self.pad_word)
         self.add_word(self.start_word)
         self.add_word(self.end_word)
         self.add_word(self.unk_word)
