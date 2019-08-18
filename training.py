@@ -30,7 +30,7 @@ class Trainer:
         self.decoder = decoder
         self.epoch = start_epoch
         self.rounds = rounds
-        self.otimizer = optimizer
+        self.optimizer = optimizer
         self.vocab_size = len(self.train_loader.dataset.vocab)
         self.vocab = self.train_loader.dataset.vocab
         if not criterion == None:
@@ -119,8 +119,8 @@ class Trainer:
         i_step = 0
     
         # Obtain the batch
-        pbar = tqdm(self.train_loader, bar_format="{postfix[0]:.2f} avg={postfix[1]:.2f}", postfix=[Inf, Inf])
-        pbar.set_description('training epoch {}'.format(self.epoch));
+        pbar = tqdm(self.train_loader, bar_format="{postfix[0]:.2f} avg={postfix[1]:.2f}", postfix=[np.inf, np.inf])
+        pbar.set_description('training epoch {}'.format(self.epoch))
         for batch in pbar:
             i_step += 1
             images, captions, lengths = batch[0], batch[1], batch[2]
@@ -153,10 +153,6 @@ class Trainer:
 
             total_loss += loss.item()
 
-            # Get training statistics
-            stats = "Epoch %d, Train step [%d/%d], %ds, Loss: %.4f, Perplexity: %5.4f" \
-                    % (epoch, i_step, len(train_loader), time.time() - start_train_time,
-                       loss.item(), np.exp(loss.item()))
             pbar.set_postfix([loss.item(), total_loss/i_step])
             
         self.epoch += 1
@@ -209,13 +205,13 @@ class Trainer:
         self.cider[self.epoch] = cocoEval.eval['CIDEr']
         self.save()
         if self.epoch == 0: 
-            last_cider = -Inf
+            last_cider = -np.inf
         else:
             last_cider = self.cider[self.epoch-1]
 
         if self.cider[self.epoch] > last_cider:
             print('CIDEr improved: {:.2f} => {:.2f}'.format(last_cider, self.cider[self.epoch]))
-            saveAs(os.path.join("./models", "best-model.pkl"))
+            self.save_as(os.path.join("./models", "best-model.pkl"))
 
         return self.cider[self.epoch]
 
