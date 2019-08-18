@@ -1,24 +1,23 @@
-import torch
-import torch.nn as nn
-from torch.autograd import Variable
-from torchvision import transforms
-import torch.utils.data as data
-import matplotlib.pyplot as plt
-import numpy as np
 import sys
 import os
 import time
-from pycocotools.coco import COCO
-import math
-import torch.utils.data as data
+
 import numpy as np
-import requests
-import time
 from tqdm import tqdm
+from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
+
+import torch
+import torch.nn as nn
+from torch.autograd import Variable
+import torch.utils.data as data
+from torchvision import transforms
+
+from pycocotools.coco import COCO
+from pycocoevalcap.eval import COCOEvalCap
 
 from data_loader import get_loader
 from model import EncoderCNN, DecoderRNN
-from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
+
 
 class Trainer:
     """The Trainer encapsulates the model training process."""
@@ -55,22 +54,25 @@ class Trainer:
     
     def load(self):
         """Load the model output of an epoch."""
-        checkpoint = torch.load(os.path.join('./models', 'epoch-model-{}.pkl'.format(self.epoch)), map_location=self.map_location)
+        checkpoint = torch.load(os.path.join('./models', 'current-model.pkl'), map_location=self.map_location)
 
         # Load the pre-trained weights
         self.encoder.load_state_dict(checkpoint['encoder'])
         self.decoder.load_state_dict(checkpoint['decoder'])
-        self.cider = checkpoint['cider']
+        #self.cider = checkpoint['cider']
 
-    def save(self):
-        """Save the following : encoder, decoder, total_loss, and epoch."""
-        filename = os.path.join("./models", "epoch-model-{}.pkl".format(self.epoch))
+    def saveAs(self, fileName):
         torch.save({"encoder": encoder.state_dict(),
                     "decoder": decoder.state_dict(),
                     "total_loss": total_loss,
                     "cider": cider,
                     "epoch": epoch
                    }, filename)
+
+    def save(self):
+        """Save the following : encoder, decoder, total_loss, and epoch."""
+        saveAs(os.path.join("./models", "current-model.pkl"))
+        saveAs(os.path.join("./models", "epoch-model-{}.pkl".format(self.epoch)))
 
     def clean_sentence(self, word_idx_list):
         """Take a list of word ids and a vocabulary from a dataset as inputs
@@ -102,7 +104,8 @@ class Trainer:
         i_step = 0
     
         # Obtain the batch
-        pbar = tqdm(self.train_loader)
+        pbar = tqdm(self.train_loader, bar_format="{postfix[0]:.2f}", postfix=0.0)
+        pbar.set_description('training epoch {}'.format(self.epoch));
         for batch in pbar:
             i_step += 1
             images, captions, lengths = batch[0], batch[1], batch[2]
@@ -139,7 +142,7 @@ class Trainer:
             stats = "Epoch %d, Train step [%d/%d], %ds, Loss: %.4f, Perplexity: %5.4f" \
                     % (epoch, i_step, len(train_loader), time.time() - start_train_time,
                        loss.item(), np.exp(loss.item()))
-            pbar.set_description(state)
+            pbar.set_postfix(loss.item())
             
         self.epoch += 1
         self.save()
@@ -159,7 +162,9 @@ class Trainer:
 
         # Disable gradient calculation because we are in inference mode
         with torch.no_grad():
-            for batch in tqdm(self.val_loader):
+            pbar = tqdm(self.val_loader)
+            pbar.set_description('evaluating epoch {}'.format(self.epoch));
+            for batch in pbar:
                 images, img_id = batch[0], batch[1]
 
                 # Move to GPU if CUDA is available
@@ -188,6 +193,15 @@ class Trainer:
         cocoEval.evaluate()
         self.cider[self.epoch] = cocoEval.eval['CIDEr']
         self.save()
+        if self.epoch == 0: 
+            last_cider = -Inf
+        else:
+            last_cider = self.cider[self.epoch-1]
+
+        self.cider[self.epoch] > last_cider:
+            print('CIDEr improved: {:.2f} => {:.2f}'.format(last_cider, self.cider[self.epoch]))
+            saveAs(os.path.join("./models", "best-model.pkl"))
+
         return self.cider[self.epoch]
 
 
@@ -244,6 +258,12 @@ optimizer = torch.optim.Adam(params=params, lr=0.001)
 trainer = Trainer(train_loader, val_loader, encoder, decoder, optimizer)
 
 # trainer.train()
-trainer.epoch = 1
 trainer.load()
-trainer.evaluate()
+# if cider is missing for current epoch, evaluater first
+if len(trainer.cider) < trainer.epoch:
+    print('Epoch {} not yet evaluated'.format(trainer.epoch))
+    trainer.evaluate()
+
+for i in range(num_epochs):
+    trainer.train()
+    trainer.evaluate()
