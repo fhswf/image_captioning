@@ -13,7 +13,7 @@ This project is forked from a [git repository](https://github.com/ntrang086/imag
 The following points have been changed:
 * The **encoder** used is a pre-trained instance of [**ResNeXt101_32x8d**](https://arxiv.org/abs/1611.05431). 
 * The **decoder** used is a two-layer [**GRU**](https://en.wikipedia.org/wiki/Gated_recurrent_unit) RNN instead of a single-layer LSTM RNN.
-* Training is done in `training.py`. Instead of sampling training captions into batches of fixed length, the training captions are padded and packed with 
+* Training is done in `training.py`. Instead of sampling training captions into batches of fixed-length captions, the training captions are padded and packed with 
   [`torch.nn.utils.rnn.pack_padded_sequence`](https://pytorch.org/docs/stable/nn.html#torch.nn.utils.rnn.pack_padded_sequence). This improves training speed on my machine and ensures that all training samples are used during a training epoch.
 * Evaluation of the model is done with the 'official' [MS COCO Evaluation Code](https://github.com/salaniz/pycocoevalcap) and the 
   CIDEr score is used to decide whether the model has improved or not.
