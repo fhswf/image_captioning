@@ -106,3 +106,4 @@ cocoapi/
 coco/
 models/
 *.pkl
+nohoup.out
