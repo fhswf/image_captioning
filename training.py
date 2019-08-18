@@ -60,7 +60,7 @@ class Trainer:
         self.encoder.load_state_dict(checkpoint['encoder'])
         self.decoder.load_state_dict(checkpoint['decoder'])
         self.epoch = checkpoint['epoch']
-        self.cider = checkpoint['cider']
+        #self.cider = checkpoint['cider']
         print('Successfully loaded epoch {}'.format(self.epoch))
 
     def save_as(self, file_name):
@@ -91,7 +91,12 @@ class Trainer:
 
     def clean_sentence(self, word_idx_list):
         """Take a list of word ids and a vocabulary from a dataset as inputs
-        and return the corresponding sentence (as a single Python string).
+        and return the corresponding sentence as a single Python string.
+
+        Parameters
+        ----------
+        word_idx_list : list
+            List of word indices, i.e. embedded words.
         """
         sentence = []
         for i in range(len(word_idx_list)):
@@ -119,7 +124,7 @@ class Trainer:
         i_step = 0
     
         # Obtain the batch
-        pbar = tqdm(self.train_loader, bar_format="{postfix[0]:.2f} avg={postfix[1]:.2f}", postfix=[np.inf, np.inf])
+        pbar = tqdm(self.train_loader)
         pbar.set_description('training epoch {}'.format(self.epoch))
         for batch in pbar:
             i_step += 1
@@ -153,7 +158,7 @@ class Trainer:
 
             total_loss += loss.item()
 
-            pbar.set_postfix([loss.item(), total_loss/i_step])
+            pbar.set_postfix(last=loss.item(), avg=total_loss/i_step)
             
         self.epoch += 1
         self.save()
@@ -202,18 +207,21 @@ class Trainer:
         imgIds = set([ann['image_id'] for ann in cocoRes.dataset['annotations']])
         cocoEval.params['image_id'] = imgIds
         cocoEval.evaluate()
-        self.cider[self.epoch] = cocoEval.eval['CIDEr']
+        if len(self.cider) < self.epoch:
+            self.cider.append(cocoEval.eval['CIDEr'])
+        else:
+            self.cider[self.epoch-1] = cocoEval.eval['CIDEr']
         self.save()
-        if self.epoch == 0: 
+        if self.epoch < 2: 
             last_cider = -np.inf
         else:
-            last_cider = self.cider[self.epoch-1]
+            last_cider = self.cider[self.epoch-2]
 
-        if self.cider[self.epoch] > last_cider:
-            print('CIDEr improved: {:.2f} => {:.2f}'.format(last_cider, self.cider[self.epoch]))
+        if self.cider[self.epoch-1] > last_cider:
+            print('CIDEr improved: {:.2f} => {:.2f}'.format(last_cider, self.cider[self.epoch-1]))
             self.save_as(os.path.join("./models", "best-model.pkl"))
 
-        return self.cider[self.epoch]
+        return self.cider[self.epoch-1]
 
 
 # Set values for the training variables
