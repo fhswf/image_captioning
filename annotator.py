@@ -25,7 +25,7 @@ class Annotator():
         self.hidden_size = 512
 
         # Get the vocabulary and its size
-        self.vocab = Vocabulary(None, './vocab.pkl', "<start>", "<end>", "<unk>", "", "", True)
+        self.vocab = Vocabulary(None, './vocab.pkl', "<start>", "<end>", "<unk>", "<pad>", "", "", True)
         self.vocab_size = len(self.vocab)
 
         # Initialize the encoder and decoder, and set each to inference mode
