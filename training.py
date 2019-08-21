@@ -58,12 +58,20 @@ class Trainer:
         # Load the pre-trained weights
         self.encoder.load_state_dict(checkpoint['encoder'])
         self.decoder.load_state_dict(checkpoint['decoder'])
+        self.optimizer.load_state_dict(checkpoint['optimizer'])
         self.epoch = checkpoint['epoch']
         self.cider = checkpoint['cider']
         print('Successfully loaded epoch {}'.format(self.epoch))
 
     def save_as(self, file_name):
         """Save the training state in a pickle file.
+
+        The following values are saved: 
+        - encoder parameter, 
+        - decoder parameters,
+        - optimizer state, 
+        - current epoch,
+        - list of CIDEr scores from the evaluation of past epochs.
         
         Parameters
         ----------
@@ -72,6 +80,7 @@ class Trainer:
         """
         torch.save({"encoder": self.encoder.state_dict(),
                     "decoder": self.decoder.state_dict(),
+                    "optimizer": self.optimizer.state_dict(),
                     "cider": self.cider,
                     "epoch": self.epoch
                    }, file_name)
@@ -81,7 +90,8 @@ class Trainer:
         
         The following values are saved: 
         - encoder parameter, 
-        - decoder parameters, 
+        - decoder parameters,
+        - optimizer state, 
         - current epoch,
         - list of CIDEr scores from the evaluation of past epochs.
         """
