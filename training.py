@@ -206,18 +206,19 @@ class Trainer:
         imgIds = set([ann['image_id'] for ann in cocoRes.dataset['annotations']])
         cocoEval.params['image_id'] = imgIds
         cocoEval.evaluate()
-        if len(self.cider) < self.epoch:
-            self.cider.append(cocoEval.eval['CIDEr'])
-        else:
-            self.cider[self.epoch-1] = cocoEval.eval['CIDEr']
-        self.save()
-        if self.epoch < 2: 
-            last_cider = -np.inf
-        else:
-            last_cider = self.cider[self.epoch-2]
+        cider = cocoEval.eval['CIDEr']
+        old_max = 0
+        if len(self.cider) > 0:
+            old_max = max(self.cider)
 
-        if self.cider[self.epoch-1] > last_cider:
-            print('CIDEr improved: {:.2f} => {:.2f}'.format(last_cider, self.cider[self.epoch-1]))
+        if len(self.cider) < self.epoch:
+            self.cider.append(cider)
+        else:
+            self.cider[self.epoch-1] = cider
+        self.save()
+        print("DEBUG: self.epoch: {}, self.cider: {}".format(self.epoch, self.cider))
+        if cider > old_max:
+            print('CIDEr improved: {:.2f} => {:.2f}'.format(old_max, cider))
             self.save_as(os.path.join("./models", "best-model.pkl"))
 
         return self.cider[self.epoch-1]
@@ -268,7 +269,7 @@ encoder = EncoderCNN(embed_size)
 decoder = DecoderRNN(embed_size, hidden_size, vocab_size)
 
 # Specify the learnable parameters of the model
-params = list(decoder.parameters()) + list(encoder.embed.parameters()) + list(encoder.bn.parameters())
+params = list(decoder.parameters()) + list(encoder.embed.parameters()) + list(encoder.bn.parameters()) + list(encoder.resnet.parameters())
 
 # Define the optimizer
 optimizer = torch.optim.Adam(params=params, lr=0.001)
