@@ -36,16 +36,25 @@ class DecoderRNN(nn.Module):
 
     def forward(self, features, captions, lengths):
         """Decode image feature vectors and generates captions."""
+        # Store length of the padded captions - we need it re-pad the packed output sequences 
         total_length = captions.size(1)
-        #captions = captions[:,:-1]
+        
+        # The stop word at the end of the captioned should not be used as input for the training.
+        # This can be achieved be reducing each element in the length tensor by -1
+        reduced_lengths = torch.add(lengths, -1)
         embeddings = self.embed(captions)
+
+        # This means that the image is presented to the RNN only in step 1
+        # TODO: Check if it would be better to include the image in *every* input
         inputs = torch.cat((features.unsqueeze(1), embeddings), 1)
+
         # pack padded input sequences
-        inputs = torch.nn.utils.rnn.pack_padded_sequence(inputs, lengths, batch_first=True, enforce_sorted=False)
+        inputs = torch.nn.utils.rnn.pack_padded_sequence(inputs, reduced_lengths, batch_first=True, enforce_sorted=False)
         x, _ = self.gru(inputs)
-        # pad sequences again
+        # pad sequences again using the stored length of the padded captions
         x, _ = torch.nn.utils.rnn.pad_packed_sequence(x, batch_first=True, total_length=total_length)
         outputs = self.linear(x)
+
         return outputs
 
     def sample(self, inputs, states=None, max_len=20):
