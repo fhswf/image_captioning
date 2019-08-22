@@ -39,9 +39,10 @@ class DecoderRNN(nn.Module):
         # Store length of the padded captions - we need it re-pad the packed output sequences 
         total_length = captions.size(1)
         
-        # The stop word at the end of the captioned should not be used as input for the training.
-        # This can be achieved be reducing each element in the length tensor by -1
-        reduced_lengths = torch.add(lengths, -1)
+        # The following line should have the effect that the "stop word" is not presented during training.
+        # However, it leads to degraded performance ...
+        # reduced_lengths = torch.add(lengths, -1)
+        reduced_lengths = lengths
         embeddings = self.embed(captions)
 
         # This means that the image is presented to the RNN only in step 1
