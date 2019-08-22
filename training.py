@@ -14,7 +14,7 @@ from torchvision import transforms
 from pycocotools.coco import COCO
 from pycocoevalcap.eval import COCOEvalCap
 
-from data_loader import get_loader
+from data_loader import MyDataLoader
 from model import EncoderCNN, DecoderRNN
 
 
@@ -30,13 +30,13 @@ class Trainer:
         self.epoch = start_epoch
         self.rounds = rounds
         self.optimizer = optimizer
-        self.vocab_size = len(self.train_loader.dataset.vocab)
-        self.vocab = self.train_loader.dataset.vocab
+        self.vocab = self.train_loader.vocab
+        self.vocab_size = len(self.vocab)
         if criterion is None:
-            self.criterion = criterion
-        else: 
-            pad_idx = self.train_loader.dataset.vocab.word2idx['<pad>']
+            pad_idx = self.vocab.word2idx['<pad>']
             self.criterion = nn.CrossEntropyLoss(ignore_index=pad_idx)
+        else: 
+            self.criterion = criterion
         
         if torch.cuda.is_available():
             self.map_location = torch.device('cuda')
@@ -58,7 +58,7 @@ class Trainer:
         # Load the pre-trained weights
         self.encoder.load_state_dict(checkpoint['encoder'])
         self.decoder.load_state_dict(checkpoint['decoder'])
-        self.optimizer.load_state_dict(checkpoint['optimizer'])
+        #self.optimizer.load_state_dict(checkpoint['optimizer'])
         self.epoch = checkpoint['epoch']
         self.cider = checkpoint['cider']
         print('Successfully loaded epoch {}'.format(self.epoch))
@@ -190,7 +190,7 @@ class Trainer:
             pbar = tqdm(self.val_loader)
             pbar.set_description('evaluating epoch {}'.format(self.epoch));
             for batch in pbar:
-                images, img_id = batch[0], batch[1]
+                images, img_id = batch[0], batch[3]
 
                 # Move to GPU if CUDA is available
                 if torch.cuda.is_available():
@@ -212,7 +212,7 @@ class Trainer:
         cocoRes.dataset['annotations'] = anns
         cocoRes.createIndex()
 
-        cocoEval = COCOEvalCap(self.val_loader.dataset.coco, cocoRes)
+        cocoEval = COCOEvalCap(self.val_loader.coco_dataset.coco, cocoRes)
         imgIds = set([ann['image_id'] for ann in cocoRes.dataset['annotations']])
         cocoEval.params['image_id'] = imgIds
         cocoEval.evaluate()
@@ -252,11 +252,11 @@ transform_train = transforms.Compose([
                          (0.229, 0.224, 0.225))])
 
 # Build data train_loader, applying the transforms
-train_loader = get_loader(transform=transform_train,
-                         mode='train',
-                         batch_size=batch_size,
-                         vocab_threshold=vocab_threshold,
-                         vocab_from_file=vocab_from_file)
+train_loader = MyDataLoader(transform=transform_train,
+                            mode='train',
+                            batch_size=batch_size,
+                            vocab_threshold=vocab_threshold,
+                            vocab_from_file=vocab_from_file)
 
 transform_val = transforms.Compose([ 
     transforms.Resize(256),                          # smaller edge of image resized to 256
@@ -265,14 +265,14 @@ transform_val = transforms.Compose([
     transforms.Normalize((0.485, 0.456, 0.406),      # normalize image for pre-trained model
                          (0.229, 0.224, 0.225))])
 
-val_loader = get_loader(transform=transform_val,
+val_loader = MyDataLoader(transform=transform_val,
                         mode='val',
                         batch_size=batch_size,
                         vocab_threshold=vocab_threshold,
                         vocab_from_file=True)
 
 # The size of the vocabulary
-vocab_size = len(train_loader.dataset.vocab)
+vocab_size = len(train_loader.vocab)
 
 # Initialize the encoder and decoder
 encoder = EncoderCNN(embed_size)
@@ -282,11 +282,11 @@ decoder = DecoderRNN(embed_size, hidden_size, vocab_size)
 params = list(decoder.parameters()) + list(encoder.embed.parameters()) + list(encoder.bn.parameters()) + list(encoder.resnet.parameters())
 
 # Define the optimizer
-optimizer = torch.optim.Adam(params=params, lr=0.001)
+optimizer = torch.optim.AdamW(params=params, lr=0.001)
 
 trainer = Trainer(train_loader, val_loader, encoder, decoder, optimizer)
 
-# trainer.train()
+#trainer.train()
 trainer.load()
 
 # if cider is missing for current epoch, evaluater first

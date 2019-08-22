@@ -14,9 +14,9 @@ class Vocabulary(object):
         end_word="<end>",
         unk_word="<unk>",
         pad_word="<pad>",
+        vocab_from_file=False,
         coco_annotations_file="./cocoapi/annotations/captions_train2014.json",
-        pexel_annotations_file="/home/cgawron/pexels/pexels.json",
-        vocab_from_file=False):
+        pexel_annotations_file="/home/cgawron/pexels/pexels.json"):
         """Initialize the vocabulary.
         Paramters:
           vocab_threshold: Minimum word count threshold.
@@ -49,6 +49,7 @@ class Vocabulary(object):
                 self.idx2word = vocab.idx2word
             print("Vocabulary successfully loaded from vocab.pkl file!")
         else:
+            print("Building vocabulary: {}, {}".format(os.path.exists(self.vocab_file), self.vocab_from_file))
             self.build_vocab()
             with open(self.vocab_file, "wb") as f:
                 pickle.dump(self, f)
