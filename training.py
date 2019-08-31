@@ -29,6 +29,7 @@ class Trainer:
         self.decoder = decoder
         self.epoch = start_epoch
         self.rounds = rounds
+        self.current_state_file = os.path.join('./models', 'current-model.pkl')
         self.optimizer = optimizer
         self.vocab = self.train_loader.vocab
         self.vocab_size = len(self.vocab)
@@ -53,12 +54,12 @@ class Trainer:
     
     def load(self):
         """Load the model output of an epoch."""
-        checkpoint = torch.load(os.path.join('./models', 'current-model.pkl'), map_location=self.map_location)
+        checkpoint = torch.load(self.current_state_file, map_location=self.map_location)
 
         # Load the pre-trained weights
         self.encoder.load_state_dict(checkpoint['encoder'])
         self.decoder.load_state_dict(checkpoint['decoder'])
-        #self.optimizer.load_state_dict(checkpoint['optimizer'])
+        self.optimizer.load_state_dict(checkpoint['optimizer'])
         self.epoch = checkpoint['epoch']
         self.cider = checkpoint['cider']
         print('Successfully loaded epoch {}'.format(self.epoch))
@@ -282,11 +283,12 @@ decoder = DecoderRNN(embed_size, hidden_size, vocab_size)
 params = list(decoder.parameters()) + list(encoder.embed.parameters()) + list(encoder.bn.parameters()) + list(encoder.resnet.parameters())
 
 # Define the optimizer
-optimizer = torch.optim.AdamW(params=params, lr=0.001)
+optimizer = torch.optim.AdamW(params=params, lr=0.001, weight_decay=0.05, amsgrad=True)
 
 trainer = Trainer(train_loader, val_loader, encoder, decoder, optimizer)
 
-#trainer.train()
+if not os.path.exists(trainer.current_state_file):
+    trainer.train()
 trainer.load()
 
 # if cider is missing for current epoch, evaluater first
